@@ -2,6 +2,7 @@
  * Sample program for ESP32 acting as a Bluetooth keyboard
  * 
  * Copyright (c) 2019 Manuel Bl
+ * Modified by Panagiotis Argyrakis, 2020
  * 
  * Licensed under MIT License
  * https://opensource.org/licenses/MIT
@@ -20,9 +21,8 @@
 // 1. Go to your computers/phones settings
 // 2. Ensure Bluetooth is turned on
 // 3. Scan for Bluetooth devices
-// 4. Connect to the device called "ESP32 Keyboard"
-// 5. Open an empty document in a text editor
-// 6. Press the button attached to the ESP32
+// 4. Connect to the device called "ESP32 Function Keys"
+// 5. Use the keypad attached to ESP32 to send function keys. F1 is top left.
 
 #include "main.h"
 
