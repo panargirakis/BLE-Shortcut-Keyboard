@@ -29,17 +29,15 @@
 #define US_KEYBOARD 1
 
 // Change the below values if desired
-#define BUTTON_PIN 2
-#define MESSAGE "Hello from ESP32\n"
-#define DEVICE_NAME "ESP32 Keyboard"
+#define DEVICE_NAME "ESP32 Function Keys"
+const int keyboardPin = 34;
 
 
 bool isBleConnected = false;
 
 const uint8_t fKeys[16] = {KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10,
-                            KEY_F11, KEY_F12, KEY_F13, KEY_F14, KEY_F15, KEY_F16};
+                            KEY_F11, KEY_F12, KEY_F13, KEY_F14, KEY_F15, KEY_F16}; // play/pause, next song, volumedown, volumeup
 
-const int keyboardPin = 34;
 
 void setup() {
     Serial.begin(115200);
@@ -47,20 +45,18 @@ void setup() {
     // set analogRead range to 0-1024 (10 bit)
     analogReadResolution(10);
 
-    // configure pin for button
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
-
     // start Bluetooth task
     xTaskCreate(bluetoothTask, "bluetooth", 20000, NULL, 5, NULL);
 }
 
 
-void loop() {  
-    Serial.println(parseAnalogIn(analogRead(keyboardPin)));
-    if (isBleConnected && digitalRead(BUTTON_PIN) == LOW) {
+void loop() {
+    int keyPressed = parseAnalogIn(analogRead(keyboardPin));
+    // Serial.println(keyPressed);
+    if (isBleConnected && keyPressed > -1) {
         // button has been pressed: type message
-        Serial.println(MESSAGE);
-        typeText(MESSAGE);
+        Serial.println(keyPressed);
+        typeText(toFunctionKey(keyPressed));
     }
 
     delay(100);
@@ -195,6 +191,8 @@ void bluetoothTask(void*) {
     // Security: device requires bonding
     BLESecurity* security = new BLESecurity();
     security->setAuthenticationMode(ESP_LE_AUTH_BOND);
+    // security->setAuthenticationMode(ESP_LE_AUTH_NO_BOND);
+    // security->setCapability(ESP_IO_CAP_NONE);
 
     // set report map
     hid->reportMap((uint8_t*)REPORT_MAP, sizeof(REPORT_MAP));
@@ -216,22 +214,24 @@ void bluetoothTask(void*) {
 };
 
 
-void typeText(const char* text) {
-    int len = strlen(text);
+void typeText(uint8_t text) {
+    int len = 1;
     for (int i = 0; i < len; i++) {
 
-        // translate character to key combination
-        uint8_t val = (uint8_t)text[i];
-        if (val > KEYMAP_SIZE)
-            continue; // character not available on keyboard - skip
-        KEYMAP map = keymap[val];
+        // // translate character to key combination
+        // uint8_t val = text;
+        // if (val > KEYMAP_SIZE)
+        //     continue; // character not available on keyboard - skip
+        // KEYMAP map = keymap[val];
 
         // create input report
         InputReport report = {
-            .modifiers = map.modifier,
+            // .modifiers = map.modifier,
+            .modifiers = 0,
             .reserved = 0,
             .pressedKeys = {
-                map.usage,
+                // map.usage,
+                text,
                 0, 0, 0, 0, 0
             }
         };
@@ -254,40 +254,16 @@ void typeText(const char* text) {
 // get which key on the 15-key analog pad was pressed. Expects 10-bit resolution.
 int parseAnalogIn(int rawInput) {
     int key = -1;
-    if (rawInput < 5)
-        key = -1;
-    else if (rawInput < 200)
-        key = 15;
-    else if (rawInput < 245)
-        key = 14;
-    else if (rawInput < 310)
-        key = 13;
-    else if (rawInput < 380)
-        key = 12;
-    else if (rawInput < 410)
-        key = 11;
-    else if (rawInput < 425)
-        key = 10;
-    else if (rawInput < 455)
-        key = 9;
-    else if (rawInput < 500)
-        key = 8;
-    else if (rawInput < 535)
-        key = 7;
-    else if (rawInput < 570)
-        key = 6;
-    else if (rawInput < 615)
-        key = 5;
-    else if (rawInput < 700)
-        key = 4;
-    else if (rawInput < 800)
-        key = 3;
-    else if (rawInput < 900)
-        key = 2;
-    else if (rawInput < 1000)
-        key = 1;
-    else if (rawInput < 1030)
-        key = 0;
+    int ranges[17] = {5, 200, 245, 310, 380, 410, 425, 455, 500, 535, 570, 615, 700, 800, 900, 1000, 1030}; // ranges
+    int mapToKey[17] = {-1, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}; // mappings
+
+    for (int i = 0; i < 17; i++) { // identify which range the input belongs to
+        if (rawInput < ranges[i]) {
+            key = mapToKey[i];
+            break;
+        }
+    }
+
     return key;
 }
 

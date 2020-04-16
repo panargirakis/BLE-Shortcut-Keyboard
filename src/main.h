@@ -6,11 +6,11 @@
 #include "BLEHIDDevice.h"
 #include "HIDTypes.h"
 #include "HIDKeyboardTypes.h"
-#include "BLEKeyCodes.h"
 
 // Forward declarations
 void bluetoothTask(void*);
-void typeText(const char* text);
+void typeText(uint8_t text);
 int parseAnalogIn(int rawInput);
+uint8_t toFunctionKey(int number);
 
 #endif // MAIN_H
